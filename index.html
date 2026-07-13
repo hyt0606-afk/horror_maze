@@ -3,272 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>👻 恐怖隨機迷宮逃脫 - 完美版</title>
-<style>
-body { background: #000; color: white; text-align: center; font-family: sans-serif; padding-top: 15px; user-select: none; }
-#level { font-size: 22px; color: #ff0055; font-weight: bold; margin-bottom: 5px; }
-#ai-status { font-size: 14px; color: #ff8800; margin-bottom: 10px; font-weight: bold; }
-#game { margin: 15px auto; display: grid; grid-template-columns: repeat(12, 30px); width: 360px; border: 3px solid #444; background: #111; }
-.c { width: 30px; height: 30px; border: 1px solid #222; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-size: 16px; }
-.wall { background: #2a2a2a; border: 1px solid #3a3a3a; }
-.floor { background: #111; }
-.p { background: #0055ff; box-shadow: inset 0 0 6px #00ffff; border-radius: 4px; }
-.e { background: #00aa00; box-shadow: inset 0 0 6px #00ff00; }
-.k { background: #ffcc00; box-shadow: inset 0 0 6px #ffff00; }
-.m { background: #cc0000; box-shadow: inset 0 0 6px #ff0000; border-radius: 50%; }
-.controls { margin: 15px auto; display: grid; grid-template-columns: repeat(3, 70px); grid-gap: 10px; width: 230px; justify-content: center; }
-button { font-size: 22px; height: 55px; width: 70px; cursor: pointer; background: #222; color: white; border: 2px solid #555; border-radius: 8px; }
-.up { grid-column: 2; }
-.left { grid-column: 1; grid-row: 2; }
-.down { grid-column: 2; grid-row: 2; }
-.right { grid-column: 3; grid-row: 2; }
-#msg { font-size: 18px; font-weight: bold; margin: 15px; min-height: 28px; color: #aaa; }
-#restart-btn { font-size: 16px; padding: 8px 20px; background: #ff3333; border: none; border-radius: 5px; margin-top: 10px; font-weight: bold; cursor: pointer; display: none; color: white; }
-</style>
-</head>
-<body>
-<h2>👻 恐怖隨機迷宮逃脫</h2>
-<div id="level">第 1 關</div>
-<div id="ai-status">👹 鬼魂狀態：路痴 (隨機亂晃)</div>
-<div id="game"></div>
-<p id="msg">🔑 找到黃色鑰匙，前往綠色出口逃出去！</p>
-<button id="restart-btn" onclick="retryLevel()">🔄 重試本關</button>
-<div class="controls">
- <button class="up" onclick="move(0,-1)">⬆️</button>
- <button class="left" onclick="move(-1,0)">⬅️</button>
- <button class="down" onclick="move(0,1)">⬇️</button>
- <button class="right" onclick="move(1,0)">➡️</button>
-</div>
-<script>
-let currentLevel = 1;
-let map = [];
-const MAP_SIZE = 12;
-let px, py, mx, my, kx, ky, ex, ey;
-let key, gameover;
-
-function shuffle(array) {
-  for (let i = array.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [array[i], array[j]] = [array[j], array[i]];
-  }
-  return array;
-}
-
-// 核心修正：利用 BFS 演算法檢查地圖上兩點是否可相通
-function isReachable(sx, sy, tx, ty, tempMap) {
-  let queue = [{x: sx, y: sy}];
-  let visited = Array(MAP_SIZE).fill().map(() => Array(MAP_SIZE).fill(false));
-  visited[sy][sx] = true;
-  let dirs = [{x:0,y:1}, {x:0,y:-1}, {x:1,y:0}, {x:-1,y:0}];
-  
-  while(queue.length > 0) {
-    let curr = queue.shift();
-    if (curr.x === tx && curr.y === ty) return true;
-    for (let d of dirs) {
-      let nx = curr.x + d.x, ny = curr.y + d.y;
-      if (nx >= 0 && nx < MAP_SIZE && ny >= 0 && ny < MAP_SIZE && tempMap[ny][nx] !== "#" && !visited[ny][nx]) {
-        visited[ny][nx] = true;
-        queue.push({x: nx, y: ny});
-      }
-    }
-  }
-  return false;
-}
-
-function generateRandomMap() {
-  document.getElementById("level").innerHTML = "第 " + currentLevel + " 關";
-  
-  let aiText = "👹 鬼魂狀態：";
-  if (currentLevel <= 3) aiText += "路痴 (隨機亂晃)";
-  else if (currentLevel <= 6) aiText += "尾隨狂 (直覺跟蹤)";
-  else aiText += "厲鬼化身 (智慧尋路繞牆)";
-  document.getElementById("ai-status").innerHTML = aiText;
-
-  // 使用無窮迴圈，直到生成一張保證可以100%通關的地圖才跳出
-  while (true) {
-    map = [];
-    for(let y=0; y<MAP_SIZE; y++) {
-      let row = [];
-      for(let x=0; x<MAP_SIZE; x++) {
-        row.push((y === 0 || y === MAP_SIZE-1 || x === 0 || x === MAP_SIZE-1) ? "#" : ".");
-      }
-      map.push(row);
-    }
-
-    let emptyCells = [];
-    for(let y=1; y<=MAP_SIZE-2; y++) {
-      for(let x=1; x<=MAP_SIZE-2; x++) {
-        emptyCells.push({x: x, y: y});
-      }
-    }
-    shuffle(emptyCells);
-
-    let pPos = emptyCells.pop(); px = pPos.x; py = pPos.y;
-    let mPos = emptyCells.pop(); mx = mPos.x; my = mPos.y;
-    let kPos = emptyCells.pop(); kx = kPos.x; ky = kPos.y;
-    let ePos = emptyCells.pop(); ex = ePos.x; ey = ePos.y;
-
-    // 隨機放置 22 個內牆
-    let wallCount = 22;
-    for(let i=0; i<wallCount; i++) {
-      if(emptyCells.length > 0) {
-        let wPos = emptyCells.pop();
-        map[wPos.y][wPos.x] = "#";
-      }
-    }
-
-    // Bug 檢測核心：必須滿足「玩家能走到鑰匙」且「鑰匙能走到出口」
-    if (isReachable(px, py, kx, ky, map) && isReachable(kx, ky, ex, ey, map)) {
-      break; // 通關路徑正確，跳出迴圈
-    }
-    // 如果路徑被堵死，迴圈會自動重跑，重新生成全新的地圖
-  }
-
-  key = false;
-  gameover = false;
-  document.getElementById("msg").innerHTML = "🔑 找到黃色鑰匙，前往綠色出口逃出去！";
-  document.getElementById("msg").style.color = "#aaa";
-  document.getElementById("restart-btn").style.display = "none";
-  draw();
-}
-
-function retryLevel() {
-  generateRandomMap();
-}
-
-function draw(){
- let g = document.getElementById("game"); g.innerHTML = "";
- for(let y=0; y<MAP_SIZE; y++){
-  for(let x=0; x<MAP_SIZE; x++){
-   let d = document.createElement("div"); d.className = "c ";
-   if(map[y][x] == "#") d.className += "wall"; else d.className += "floor";
-   if(x == px && y == py) d.className += " p";
-   if(x == ex && y == ey) d.className += " e";
-   if(x == kx && y == ky && !key) d.className += " k";
-   if(x == mx && y == my) d.className += " m";
-   g.appendChild(d);
-  }
- }
-}
-
-function move(x,y){
- if(gameover) return; 
- let nx = px + x, ny = py + y; 
- if(map[ny][nx] == "#") return; 
- px = nx; py = ny;
-
- if(px == kx && py == ky && !key){ 
-  key = true; 
-  document.getElementById("msg").innerHTML = "🔑 順利拿到鑰匙了！快前往綠色出口！"; 
-  document.getElementById("msg").style.color = "#ffff00"; 
- }
-
- if(px == ex && py == ey && key){ 
-  currentLevel++; 
-  document.getElementById("msg").innerHTML = "🎉 成功逃脫！即將載入第 " + currentLevel + " 關..."; 
-  document.getElementById("msg").style.color = "#00ff00"; 
-  gameover = true;
-  draw();
-  setTimeout(generateRandomMap, 1500);
-  return; 
- }
-
- monsterTurn();
-
- if(px == mx && py == my){ 
-  document.getElementById("msg").innerHTML = "💀 慘了！你被鬼抓到了！"; 
-  document.getElementById("msg").style.color = "#ff3333"; 
-  gameover = true; 
-  endGame(); 
-  return; 
- }
- draw();
-}
-
-function monsterTurn(){
-  let nextMoves = [{x: 0, y: 1}, {x: 0, y: -1}, {x: 1, y: 0}, {x: -1, y: 0}];
-  let validMoves = nextMoves.filter(m => {
-    let nx = mx + m.x, ny = my + m.y;
-    return nx >= 0 && nx < MAP_SIZE && ny >= 0 && ny < MAP_SIZE && map[ny][nx] != "#";
-  });
-  if (validMoves.length === 0) return;
-
-  if (currentLevel <= 3) {
-    if (Math.random() < 0.8) {
-      let m = validMoves[Math.floor(Math.random() * validMoves.length)];
-      mx += m.x; my += m.y;
-    } else {
-      basicChase(validMoves);
-    }
-  } 
-  else if (currentLevel <= 6) {
-    if (Math.random() < 0.4) {
-      let m = validMoves[Math.floor(Math.random() * validMoves.length)];
-      mx += m.x; my += m.y;
-    } else {
-      basicChase(validMoves);
-    }
-  } 
-  else {
-    let bestMove = bfsFindPath();
-    if (bestMove) { mx = bestMove.x; my = bestMove.y; } 
-    else { basicChase(validMoves); }
-  }
-}
-
-function basicChase(validMoves) {
-  let bestMove = validMoves[0];
-  let minDist = Infinity;
-  for (let m of validMoves) {
-    let nx = mx + m.x, ny = my + m.y;
-    let dist = Math.abs(nx - px) + Math.abs(ny - py);
-    if (dist < minDist) { minDist = dist; bestMove = m; }
-  }
-  mx += bestMove.x; my += bestMove.y;
-}
-
-function bfsFindPath() {
-  let queue = [ {x: mx, y: my, path: null} ];
-  let visited = Array(MAP_SIZE).fill().map(() => Array(MAP_SIZE).fill(false));
-  visited[my][mx] = true;
-  let dirs = [{x:0, y:1}, {x:0, y:-1}, {x:1, y:0}, {x:-1, y:0}];
-  
-  while(queue.length > 0) {
-    let curr = queue.shift();
-    if (curr.x === px && curr.y === py) return curr.path;
-    for (let d of dirs) {
-      let nx = curr.x + d.x, ny = curr.y + d.y;
-      if (nx >= 0 && nx < MAP_SIZE && map[ny][nx] !== "#" && !visited[ny][nx]) {
-        visited[ny][nx] = true;
-        let firstStep = curr.path === null ? {x: nx, y: ny} : curr.path;
-        queue.push({x: nx, y: ny, path: firstStep});
-      }
-    }
-  }
-  return null;
-}
-
-function endGame() { 
- draw(); 
- document.getElementById("restart-btn").style.display = "inline-block"; 
-}
-
-document.addEventListener('keydown', function(event) {
- if(['ArrowUp', 'w', 'W'].includes(event.key)) { event.preventDefault(); move(0, -1); }
- if(['ArrowDown', 's', 'S'].includes(event.key)) { event.preventDefault(); move(0, 1); }
- if(['ArrowLeft', 'a', 'A'].includes(event.key)) { event.preventDefault(); move(-1, 0); }
- if(['ArrowRight', 'd', 'D'].includes(event.key)) { event.preventDefault(); move(1, 0); }
-});
-
-generateRandomMap();
-</script>
-</body>
-</html>
-<!DOCTYPE html>
-<html lang="zh-Hant">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>👻 恐怖隨機迷宮逃脫 - 多人聯機版</title>
 <style>
 body { background: #000; color: white; text-align: center; font-family: sans-serif; padding-top: 15px; user-select: none; }
@@ -305,7 +39,7 @@ button { font-size: 22px; height: 55px; width: 70px; cursor: pointer; background
 </head>
 <body>
 
-<!-- 1. 多人匹配大廳畫面（直接開啟） -->
+<!-- 1. 多人匹配大廳畫面 -->
 <div id="lobby-screen">
   <h2>🌐 正在搜尋倖存者...</h2>
   <div id="match-timer">00:00</div>
@@ -365,14 +99,12 @@ function startMatching() {
   let elapsed = 0;
   let matchedPlayers = 1;
   document.getElementById("match-timer").innerHTML = "00:00";
-  document.getElementById("lobby-msg").innerHTML = "超過 1 分鐘未滿員將自動分配人機補位...";
   
   let matchInterval = setInterval(() => {
     elapsed++;
     let sec = elapsed < 10 ? "0" + elapsed : elapsed;
     document.getElementById("match-timer").innerHTML = "00:" + sec;
     
-    // 隨機模擬真人玩家加入
     if (matchedPlayers < 5 && Math.random() < 0.4 && elapsed < 12) {
       matchedPlayers++;
       let names = ["小明", "狂暴阿杰", "歐皇本皇", "草叢路過"];
@@ -380,7 +112,6 @@ function startMatching() {
       document.getElementById("slot" + (matchedPlayers - 1)).style.color = "#00ff00";
     }
     
-    // 滿員或滿 15 秒強制開啟
     if (elapsed >= 15 || matchedPlayers === 5) {
       clearInterval(matchInterval);
       for (let i = matchedPlayers; i < 5; i++) {
@@ -523,7 +254,7 @@ function draw(){
    
    if(x == ex && y == ey) d.className += " e";
    if(x == kx && y == ky && !key) d.className += " k";
-      // 繪製活著的角色
+   
    players.forEach(p => {
      if(p.alive && p.x == x && p.y == y) {
        d.className += " " + p.colorClass;
@@ -719,4 +450,3 @@ startMatching();
 </script>
 </body>
 </html>
-
