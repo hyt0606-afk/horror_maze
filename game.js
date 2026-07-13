@@ -29,6 +29,8 @@ function initGame(){
     
     createItems();
     
+    updateHUD();
+    
     gameRunning = true;
 
     document.getElementById("menu").classList.add("hidden");
@@ -60,7 +62,9 @@ function update(){
     updateGhost();
 
     updateItems();
-
+    
+    updateTimer();
+    
 }
 
 // 繪圖
