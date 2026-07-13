@@ -26,7 +26,9 @@ function initGame(){
     createPlayer();
 
     createGhost();
-
+    
+    createItems();
+    
     gameRunning = true;
 
     document.getElementById("menu").classList.add("hidden");
@@ -57,7 +59,7 @@ function update(){
 
     updateGhost();
 
-    updateTimer();
+    updateItems();
 
 }
 
@@ -66,11 +68,13 @@ function draw(){
 
     ctx.clearRect(0,0,canvas.width,canvas.height);
 
-    drawMaze(ctx);
+drawMaze(ctx);
 
-    drawPlayer(ctx);
+drawItems(ctx);
 
-    drawGhost(ctx);
+drawPlayer(ctx);
+
+drawGhost(ctx);
 
 }
 
