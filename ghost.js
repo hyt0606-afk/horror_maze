@@ -119,7 +119,9 @@ function randomMove() {
 
 // 畫鬼
 function drawGhost(ctx) {
-
+    
+if (!ghostVisible()) return;
+    
     const px = ghost.x * TILE_SIZE + TILE_SIZE / 2;
     const py = ghost.y * TILE_SIZE + TILE_SIZE / 2;
 
