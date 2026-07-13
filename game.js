@@ -1,5 +1,5 @@
 // =============================
-// game.js - 完整優化版本
+// game.js - 完全修復版本
 // Horror Maze Online
 // =============================
 
@@ -15,37 +15,54 @@ let lastUpdateTime = Date.now();
 
 // 初始化
 function initGame() {
-    // 清空動畫
-    AnimationManager.clear();
-    
-    // 重置遊戲狀態
-    createMaze();
-    createPlayer();
-    createGhost();
-    createItems();
-    
-    keysCollected = 0;
-    gameTime = GAME_TIME;
-    
-    updateHUD();
-    
-    gameRunning = true;
+    try {
+        // 清空動畫
+        if (typeof AnimationManager !== 'undefined') {
+            AnimationManager.clear();
+        }
+        
+        // 重置遊戲狀態
+        createMaze();
+        createPlayer();
+        createGhost();
+        createItems();
+        
+        keysCollected = 0;
+        gameTime = GAME_TIME;
+        
+        updateHUD();
+        
+        gameRunning = true;
 
-    document.getElementById("menu").classList.add("hidden");
-    document.getElementById("hud").classList.remove("hidden");
-    document.getElementById("gameArea").classList.remove("hidden");
-    
-    // 初始化系統
-    PerformanceMonitor.init();
-    DrawOptimizer.init();
-    InputHandler.init();
-    JoystickManager.init();
-    SoundManager.init();
-    
-    // 顯示遊戲開始通知
-    UIManager.showNotification('🎮 遊戲開始！');
+        document.getElementById("menu").classList.add("hidden");
+        document.getElementById("difficultyMenu").classList.add("hidden");
+        document.getElementById("hud").classList.remove("hidden");
+        document.getElementById("gameArea").classList.remove("hidden");
+        
+        // 初始化系統
+        if (typeof PerformanceMonitor !== 'undefined') {
+            PerformanceMonitor.init();
+        }
+        if (typeof DrawOptimizer !== 'undefined') {
+            DrawOptimizer.init();
+        }
+        if (typeof InputHandler !== 'undefined') {
+            InputHandler.init();
+        }
+        if (typeof JoystickManager !== 'undefined') {
+            JoystickManager.init();
+        }
+        if (typeof SoundManager !== 'undefined') {
+            SoundManager.init();
+        }
+        
+        console.log('✅ 遊戲初始化成功，難度：' + (DifficultyManager?.currentDifficulty || 'normal'));
 
-    requestAnimationFrame(gameLoop);
+        requestAnimationFrame(gameLoop);
+    } catch (error) {
+        console.error('❌ 遊戲初始化失敗:', error);
+        alert('遊戲初始化失敗：' + error.message);
+    }
 }
 
 // 主迴圈（優化版）
@@ -53,15 +70,26 @@ let lastFrameTime = 0;
 function gameLoop(currentTime) {
     if (!gameRunning) return;
     
-    PerformanceMonitor.recordFrame();
+    if (typeof PerformanceMonitor !== 'undefined') {
+        PerformanceMonitor.recordFrame();
+    }
     
     // 計算 Delta Time
     const deltaTime = (currentTime - lastFrameTime) / 1000;
     lastFrameTime = currentTime;
     
     // 執行更新和繪製
-    PerformanceMonitor.measure('update', () => update(deltaTime));
-    PerformanceMonitor.measure('draw', () => draw());
+    try {
+        if (typeof PerformanceMonitor !== 'undefined') {
+            PerformanceMonitor.measure('update', () => update(deltaTime));
+            PerformanceMonitor.measure('draw', () => draw());
+        } else {
+            update(deltaTime);
+            draw();
+        }
+    } catch (error) {
+        console.error('❌ 遊戲迴圈錯誤:', error);
+    }
 
     requestAnimationFrame(gameLoop);
 }
@@ -70,58 +98,93 @@ function gameLoop(currentTime) {
 function update(deltaTime) {
     if (!gameRunning) return;
     
-    updatePlayer();
-    updateGhost();
-    updateItems();
-    updateTimer();
-    updateGhostWarning();
-    AnimationManager.updateParticles();
-    AnimationManager.updateAnimations();
-    
-    // 發送網路更新
-    if (NetworkManager.connected) {
-        NetworkManager.sendPlayerPosition(player.x, player.y);
+    try {
+        updatePlayer();
+        updateGhost();
+        updateItems();
+        updateTimer();
+        
+        if (typeof updateGhostWarning !== 'undefined') {
+            updateGhostWarning();
+        }
+        if (typeof AnimationManager !== 'undefined') {
+            AnimationManager.updateParticles();
+            AnimationManager.updateAnimations();
+        }
+        
+        // 發送網路更新
+        if (typeof NetworkManager !== 'undefined' && NetworkManager.connected) {
+            NetworkManager.sendPlayerPosition(player.x, player.y);
+        }
+    } catch (error) {
+        console.error('❌ 更新錯誤:', error);
     }
 }
 
 // 繪製遊戲
 function draw() {
-    // 使用離屏 canvas 優化渲染
-    const offscreenCtx = DrawOptimizer.getOffscreenContext();
-    DrawOptimizer.clear();
-    
-    // 繪製遊戲元素
-    drawMaze(offscreenCtx);
-    drawItems(offscreenCtx);
-    drawPlayer(offscreenCtx);
-    drawRemotePlayers(offscreenCtx); // 遠端玩家
-    drawGhost(offscreenCtx);
-    
-    // 繪製動畫
-    AnimationManager.drawParticles(offscreenCtx);
-    AnimationManager.drawFloatingText(offscreenCtx);
-    
-    // 繪製照明（必須最後）
-    drawLighting(offscreenCtx);
-    
-    // 繪製傷害閃爍
-    AnimationManager.drawDamageFlash(offscreenCtx);
-    
-    // 複製到主 canvas
-    DrawOptimizer.copyToMain(ctx);
+    try {
+        // 使用離屏 canvas 優化渲染
+        if (typeof DrawOptimizer !== 'undefined' && DrawOptimizer.offscreenCanvas) {
+            const offscreenCtx = DrawOptimizer.getOffscreenContext();
+            DrawOptimizer.clear();
+            
+            // 繪製遊戲元素
+            drawMaze(offscreenCtx);
+            drawItems(offscreenCtx);
+            drawPlayer(offscreenCtx);
+            
+            if (typeof drawRemotePlayers !== 'undefined') {
+                drawRemotePlayers(offscreenCtx); // 遠端玩家
+            }
+            
+            drawGhost(offscreenCtx);
+            
+            // 繪製動畫
+            if (typeof AnimationManager !== 'undefined') {
+                AnimationManager.drawParticles(offscreenCtx);
+                AnimationManager.drawFloatingText(offscreenCtx);
+            }
+            
+            // 繪製照明（必須最後）
+            drawLighting(offscreenCtx);
+            
+            // 繪製傷害閃爍
+            if (typeof AnimationManager !== 'undefined') {
+                AnimationManager.drawDamageFlash(offscreenCtx);
+            }
+            
+            // 複製到主 canvas
+            DrawOptimizer.copyToMain(ctx);
+        } else {
+            // 降級方案：直接使用主 canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawMaze(ctx);
+            drawItems(ctx);
+            drawPlayer(ctx);
+            drawGhost(ctx);
+            drawLighting(ctx);
+        }
+    } catch (error) {
+        console.error('❌ 繪製錯誤:', error);
+    }
 }
 
 // HUD 更新
 function updateHUD() {
-    document.getElementById("keyCount").innerText =
-        `🔑 ${keysCollected} / ${TOTAL_KEYS}`;
-    
-    // 更新體力條（如果存在）
-    if (document.getElementById("staminaBar")) {
-        const staminaPercent = (player.stamina / player.maxStamina) * 100;
-        const bar = document.getElementById("staminaBar");
-        bar.style.width = staminaPercent + '%';
-        bar.style.backgroundColor = staminaPercent > 30 ? '#00FF00' : '#FF6600';
+    try {
+        document.getElementById("keyCount").innerText =
+            `🔑 ${keysCollected} / ${TOTAL_KEYS}`;
+        
+        // 更新體力條（如果存在）
+        if (document.getElementById("staminaBar")) {
+            const staminaPercent = (player.stamina / player.maxStamina) * 100;
+            const bar = document.getElementById("staminaBar");
+            bar.style.width = staminaPercent + '%';
+            bar.style.backgroundColor = staminaPercent > 30 ? '#00FF00' : '#FF6600';
+        }
+    } catch (error) {
+        console.error('❌ HUD 更新錯誤:', error);
     }
 }
 
@@ -131,7 +194,9 @@ function updateTimer() {
         gameTime--;
     } else {
         gameOver(RESULT_GAME_OVER);
-        SoundManager.playGameOver();
+        if (typeof SoundManager !== 'undefined') {
+            SoundManager.playGameOver();
+        }
     }
 
     let min = Math.floor(gameTime / 60);
@@ -145,39 +210,67 @@ function updateTimer() {
 function gameOver(text) {
     gameRunning = false;
     
-    // 計算分數
-    const score = DifficultyManager.calculateScore(
-        gameTime,
-        keysCollected,
-        DifficultyManager.currentDifficulty
-    );
-    
-    // 保存分數
-    const playerName = document.getElementById("playerName").value || 'Anonymous';
-    ScoreManager.saveScore(playerName, score, DifficultyManager.currentDifficulty);
-
-    document.getElementById("gameOver").classList.remove("hidden");
-    document.getElementById("resultText").innerText = text;
-    
-    // 顯示分數
-    const scoreDisplay = document.createElement('div');
-    scoreDisplay.id = "scoreDisplay";
-    scoreDisplay.innerText = `分數: ${score}`;
-    document.getElementById("gameOver").appendChild(scoreDisplay);
-    
-    // 發送網路通知
-    if (NetworkManager.connected) {
-        NetworkManager.sendGameOver(text);
+    try {
+        // 計算分數
+        let score = 0;
+        if (typeof DifficultyManager !== 'undefined') {
+            score = DifficultyManager.calculateScore(
+                gameTime,
+                keysCollected,
+                DifficultyManager.currentDifficulty
+            );
+            
+            // 保存分數
+            const playerName = document.getElementById("playerName").value || 'Anonymous';
+            if (typeof ScoreManager !== 'undefined') {
+                ScoreManager.saveScore(playerName, score, DifficultyManager.currentDifficulty);
+            }
+        }
+        
+        document.getElementById("gameOver").classList.remove("hidden");
+        document.getElementById("resultText").innerText = text;
+        
+        // 顯示分數
+        if (score > 0) {
+            const scoreDisplay = document.createElement('div');
+            scoreDisplay.id = "scoreDisplay";
+            scoreDisplay.innerText = `分數: ${score}`;
+            document.getElementById("gameOver").appendChild(scoreDisplay);
+        }
+        
+        // 發送網路通知
+        if (typeof NetworkManager !== 'undefined' && NetworkManager.connected) {
+            NetworkManager.sendGameOver(text);
+        }
+    } catch (error) {
+        console.error('❌ 遊戲結束處理錯誤:', error);
     }
 }
 
-// 事件監聽
-document.getElementById("singleBtn")
-    .addEventListener("click", () => {
-        UIManager.showDifficultyMenu();
-    });
+// 頁面加載完成後初始化
+window.addEventListener('DOMContentLoaded', function() {
+    console.log('📄 頁面加載完成');
+    
+    // 綁定單人遊戲按鈕
+    const singleBtn = document.getElementById("singleBtn");
+    if (singleBtn) {
+        singleBtn.addEventListener("click", function() {
+            console.log('🎮 點擊單人遊戲');
+            // 直接開始遊戲（默認難度 normal）
+            if (typeof DifficultyManager !== 'undefined') {
+                DifficultyManager.setDifficulty('normal');
+            }
+            initGame();
+        });
+    }
 
-document.getElementById("restartBtn")
-    .addEventListener("click", () => {
-        location.reload();
-    });
+    // 綁定重新開始按鈕
+    const restartBtn = document.getElementById("restartBtn");
+    if (restartBtn) {
+        restartBtn.addEventListener("click", () => {
+            location.reload();
+        });
+    }
+    
+    console.log('✅ 事件監聽器綁定完成');
+});

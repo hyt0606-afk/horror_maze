@@ -35,6 +35,12 @@
 
     </div>
 
+    <!-- 難度選擇菜單 -->
+    <div id="difficultyMenu" class="hidden">
+        <h2>選擇難度</h2>
+        <div id="difficultyOptions"></div>
+    </div>
+
     <!-- HUD -->
     <div id="hud" class="hidden">
 
@@ -81,21 +87,21 @@
 
         <div id="joystick"></div>
 
-        <button id="runBtn">
+        <button id="runBtn" class="mobile-btn">
             🏃
         </button>
 
-        <button id="flashBtn">
+        <button id="flashBtn" class="mobile-btn">
             🔦
         </button>
 
-        <button id="actionBtn">
+        <button id="actionBtn" class="mobile-btn">
             ✋
         </button>
 
     </div>
 
-    <!-- 程式載入順序（優化版） -->
+    <!-- 程式載入順序（完整版） -->
     <!-- 配置與工具 -->
     <script src="constants.js"></script>
     <script src="performance.js"></script>
@@ -111,9 +117,14 @@
     <script src="input-handler.js"></script>
     <script src="joystick.js"></script>
     
-    <!-- 網路與聲音（待實現） -->
-    <!-- <script src="sound.js"></script>
-    <script src="network.js"></script> -->
+    <!-- 音效與網路 -->
+    <script src="sound.js"></script>
+    <script src="network.js"></script>
+    
+    <!-- UI 與系統 -->
+    <script src="animation.js"></script>
+    <script src="difficulty.js"></script>
+    <script src="ui.js"></script>
     
     <!-- 主遊戲迴圈 -->
     <script src="game.js"></script>
