@@ -1,0 +1,402 @@
+/* =============================
+   Horror Maze Online
+   style.css - 完整優化版本
+============================== */
+
+/* ===== 變數定義 ===== */
+:root {
+    --primary-color: #ff3333;
+    --secondary-color: #00aaff;
+    --success-color: #00ff66;
+    --warning-color: #ff6600;
+    --danger-color: #ff0000;
+    --dark-bg: #000;
+    --dark-panel: #111;
+    --border-color: #444;
+    --text-color: #fff;
+}
+
+/* ===== 基本設定 ===== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: var(--dark-bg);
+    color: var(--text-color);
+    font-family: 'Arial', 'Helvetica', sans-serif;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* ===== 主選單 ===== */
+#menu {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 360px;
+    max-width: 90%;
+    background: var(--dark-panel);
+    border: 2px solid var(--border-color);
+    border-radius: 15px;
+    padding: 30px;
+    text-align: center;
+    box-shadow: 0 0 30px rgba(255, 0, 0, 0.25);
+    z-index: 100;
+    animation: popIn 0.3s ease;
+}
+
+#menu h1 {
+    color: var(--primary-color);
+    margin-bottom: 10px;
+    font-size: 28px;
+    text-shadow: 0 0 10px var(--primary-color);
+}
+
+#menu p {
+    color: #bbb;
+    margin-bottom: 25px;
+    font-size: 16px;
+}
+
+#playerName {
+    width: 100%;
+    padding: 12px;
+    font-size: 16px;
+    border-radius: 10px;
+    border: 2px solid var(--border-color);
+    background: #222;
+    color: var(--text-color);
+    margin-bottom: 15px;
+    transition: border-color 0.3s;
+}
+
+#playerName:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+/* ===== 按鈕 ===== */
+button {
+    margin: 8px;
+    padding: 12px 22px;
+    font-size: 16px;
+    font-weight: bold;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    background: #222;
+    color: var(--text-color);
+    border: 2px solid transparent;
+    transition: all 0.2s;
+}
+
+button:hover {
+    background: var(--border-color);
+    transform: scale(1.05);
+    border-color: var(--primary-color);
+}
+
+button:active {
+    transform: scale(0.95);
+}
+
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ===== HUD ===== */
+#hud {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 70px;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.8);
+    border-bottom: 2px solid var(--border-color);
+    z-index: 50;
+    backdrop-filter: blur(5px);
+}
+
+#hud div {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+#role {
+    color: var(--secondary-color);
+    font-weight: bold;
+    font-size: 16px;
+}
+
+#keyCount {
+    color: gold;
+    font-weight: bold;
+    font-size: 18px;
+}
+
+#timer {
+    color: var(--danger-color);
+    font-size: 24px;
+    font-weight: bold;
+    font-family: 'Courier New', monospace;
+}
+
+#staminaBar {
+    width: 150px;
+    height: 6px;
+    background: rgba(100, 100, 100, 0.5);
+    border-radius: 3px;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+}
+
+#staminaBar .bar {
+    height: 100%;
+    background: var(--success-color);
+    border-radius: 3px;
+    transition: width 0.1s, background-color 0.3s;
+}
+
+/* ===== 遊戲畫面 ===== */
+#gameArea {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#gameCanvas {
+    background: #0a0a0a;
+    border: 3px solid var(--border-color);
+    box-shadow: 0 0 30px rgba(255, 0, 0, 0.25);
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+}
+
+/* ===== Game Over ===== */
+#gameOver {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 340px;
+    max-width: 90%;
+    padding: 30px;
+    text-align: center;
+    background: var(--dark-panel);
+    border-radius: 15px;
+    border: 2px solid #700;
+    box-shadow: 0 0 40px var(--danger-color);
+    animation: popIn 0.3s;
+    z-index: 200;
+}
+
+#resultText {
+    margin-bottom: 25px;
+    color: var(--primary-color);
+    font-size: 32px;
+    font-weight: bold;
+}
+
+#scoreDisplay {
+    margin-bottom: 20px;
+    font-size: 24px;
+    color: gold;
+}
+
+/* ===== 手機控制 ===== */
+#mobileUI {
+    position: fixed;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    padding: 20px;
+    display: none;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 20px;
+}
+
+#joystick {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.08);
+    border: 3px solid rgba(255, 255, 255, 0.2);
+    box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
+    flex-shrink: 0;
+}
+
+.mobile-btn {
+    width: 70px !important;
+    height: 70px !important;
+    border-radius: 50% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    font-size: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 2px solid rgba(255, 255, 255, 0.2) !important;
+    flex-shrink: 0;
+}
+
+.mobile-btn:active {
+    background: rgba(255, 255, 255, 0.3) !important;
+    transform: scale(0.9);
+}
+
+/* ===== 動畫 ===== */
+@keyframes popIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.7;
+    }
+}
+
+@keyframes flicker {
+    0% { opacity: 1; }
+    20% { opacity: 0.85; }
+    40% { opacity: 1; }
+    60% { opacity: 0.75; }
+    80% { opacity: 1; }
+    100% { opacity: 0.9; }
+}
+
+#gameCanvas {
+    animation: flicker 4s infinite;
+}
+
+/* ===== 通知 ===== */
+.notification {
+    position: fixed;
+    top: 90px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.95);
+    color: var(--text-color);
+    padding: 15px 30px;
+    border-radius: 10px;
+    border: 2px solid var(--success-color);
+    z-index: 1000;
+    animation: slideDown 0.3s ease;
+    max-width: 90%;
+}
+
+/* ===== 表格 ===== */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+}
+
+table th, table td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+table th {
+    background: rgba(255, 255, 255, 0.05);
+    font-weight: bold;
+    color: var(--secondary-color);
+}
+
+table tr:hover {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+/* ===== 響應式設計 ===== */
+@media (max-width: 768px) {
+    #menu {
+        width: 90%;
+        padding: 20px;
+    }
+    
+    #menu h1 {
+        font-size: 24px;
+    }
+    
+    #gameCanvas {
+        width: 95vw;
+        height: 95vw;
+        max-width: 95vh;
+        max-height: 95vh;
+    }
+    
+    #hud {
+        height: 60px;
+        flex-direction: column;
+        padding: 5px 0;
+    }
+    
+    #mobileUI {
+        display: flex;
+    }
+}
+
+@media (min-width: 769px) {
+    #mobileUI {
+        display: none !important;
+    }
+    
+    #gameCanvas {
+        width: 720px;
+        height: 720px;
+    }
+}
+
+/* ===== 橫向模式 ===== */
+@media (orientation: landscape) and (max-height: 500px) {
+    #hud {
+        height: 50px;
+        font-size: 14px;
+    }
+    
+    #gameCanvas {
+        width: 90vh;
+        height: 90vh;
+    }
+}
