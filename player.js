@@ -1,42 +1,38 @@
 // =============================
-// player.js - 優化版本
-// 玩家控制系統
+// player.js
+// 玩家控制
 // =============================
 
 // 玩家資料
 let player = {
-    x: PLAYER_START_X,
-    y: PLAYER_START_Y,
-    size: PLAYER_SIZE,
-    color: PLAYER_COLOR,
-
-    speed: PLAYER_SPEED,
-    runSpeed: PLAYER_RUN_SPEED,
-
+    x: 1,
+    y: 1,
+    size: 32,
+    color: "#00AAFF",
+    speed: 1,
+    runSpeed: 2,
     running: false,
-
-    stamina: PLAYER_MAX_STAMINA,
-    maxStamina: PLAYER_MAX_STAMINA,
-
+    stamina: 100,
+    maxStamina: 100,
     direction: "down"
 };
 
 // 建立玩家
 function createPlayer() {
-    player.x = PLAYER_START_X;
-    player.y = PLAYER_START_Y;
-    player.stamina = PLAYER_MAX_STAMINA;
+    player.x = 1;
+    player.y = 1;
+    player.stamina = 100;
     player.running = false;
 }
 
-// 更新玩家（優化版 - 更平穩的體力恢復）
+// 更新玩家
 function updatePlayer() {
     // 恢復體力
     if (!player.running && player.stamina < player.maxStamina) {
-        player.stamina = Math.min(
-            player.stamina + STAMINA_RECOVERY_RATE,
-            player.maxStamina
-        );
+        player.stamina += 0.2;
+        if (player.stamina > player.maxStamina) {
+            player.stamina = player.maxStamina;
+        }
     }
 }
 
@@ -51,55 +47,34 @@ function drawPlayer(ctx) {
     ctx.arc(px, py, player.size / 2, 0, Math.PI * 2);
     ctx.fill();
 
-    // 玩家眼睛（朝向指示）
+    // 玩家眼睛
     ctx.fillStyle = "#FFFFFF";
-
     let eyeX = 0;
     let eyeY = 0;
 
     switch (player.direction) {
         case "up":
-            eyeY = -PLAYER_EYE_OFFSET;
+            eyeY = -8;
             break;
         case "down":
-            eyeY = PLAYER_EYE_OFFSET;
+            eyeY = 8;
             break;
         case "left":
-            eyeX = -PLAYER_EYE_OFFSET;
+            eyeX = -8;
             break;
         case "right":
-            eyeX = PLAYER_EYE_OFFSET;
+            eyeX = 8;
             break;
     }
 
     ctx.beginPath();
-    ctx.arc(px + eyeX, py + eyeY, PLAYER_EYE_SIZE, 0, Math.PI * 2);
+    ctx.arc(px + eyeX, py + eyeY, 3, 0, Math.PI * 2);
     ctx.fill();
-    
-    // 繪製體力條
-    drawStaminaBar(ctx, px, py);
-}
-
-// 繪製體力條
-function drawStaminaBar(ctx, px, py) {
-    const barWidth = 40;
-    const barHeight = 4;
-    const staminaPercent = player.stamina / player.maxStamina;
-    
-    // 背景
-    ctx.fillStyle = "rgba(100,100,100,0.5)";
-    ctx.fillRect(px - barWidth / 2, py + 20, barWidth, barHeight);
-    
-    // 體力條
-    const color = staminaPercent > 0.3 ? "#00FF00" : "#FF6600";
-    ctx.fillStyle = color;
-    ctx.fillRect(px - barWidth / 2, py + 20, barWidth * staminaPercent, barHeight);
 }
 
 // 玩家移動
 function movePlayer(dx, dy) {
     const step = player.running ? player.runSpeed : player.speed;
-
     const nextX = player.x + dx * step;
     const nextY = player.y + dy * step;
 
@@ -109,14 +84,56 @@ function movePlayer(dx, dy) {
     player.y = nextY;
 }
 
-// 奔跑消耗體力（優化版 - 更精確的時間控制）
-setInterval(() => {
-    if (player.running && player.stamina > 0) {
-        player.stamina -= STAMINA_DRAIN_RATE;
+// Shift 奔跑
+document.addEventListener("keydown", (e) => {
+    if (e.key === "Shift" && player.stamina > 0) {
+        player.running = true;
+    }
+});
 
+document.addEventListener("keyup", (e) => {
+    if (e.key === "Shift") {
+        player.running = false;
+    }
+});
+
+// 鍵盤控制
+document.addEventListener("keydown", (e) => {
+    switch (e.key) {
+        case "ArrowUp":
+        case "w":
+        case "W":
+            player.direction = "up";
+            movePlayer(0, -1);
+            break;
+        case "ArrowDown":
+        case "s":
+        case "S":
+            player.direction = "down";
+            movePlayer(0, 1);
+            break;
+        case "ArrowLeft":
+        case "a":
+        case "A":
+            player.direction = "left";
+            movePlayer(-1, 0);
+            break;
+        case "ArrowRight":
+        case "d":
+        case "D":
+            player.direction = "right";
+            movePlayer(1, 0);
+            break;
+    }
+});
+
+// 奔跑消耗體力
+setInterval(() => {
+    if (player.running) {
+        player.stamina -= 1;
         if (player.stamina <= 0) {
             player.stamina = 0;
             player.running = false;
         }
     }
-}, STAMINA_DRAIN_INTERVAL);
+}, 100);

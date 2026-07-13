@@ -4,130 +4,54 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>👻 Horror Maze Online</title>
-
     <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
-
     <!-- 主選單 -->
     <div id="menu">
-
         <h1>👻 Horror Maze Online</h1>
-
         <p>多人恐怖迷宮逃脫</p>
-
-        <input
-            id="playerName"
-            type="text"
-            placeholder="輸入玩家名稱"
-            maxlength="12">
-
+        <input id="playerName" type="text" placeholder="輸入玩家名稱" maxlength="12">
         <br><br>
-
-        <button id="singleBtn">
-            單人遊戲
-        </button>
-
-        <button id="multiBtn">
-            多人連線
-        </button>
-
-    </div>
-
-    <!-- 難度選擇菜單 -->
-    <div id="difficultyMenu" class="hidden">
-        <h2>選擇難度</h2>
-        <div id="difficultyOptions"></div>
+        <button id="singleBtn">單人遊戲</button>
+        <button id="multiBtn">多人連線</button>
     </div>
 
     <!-- HUD -->
     <div id="hud" class="hidden">
-
-        <div id="role">
-            角色：玩家
-        </div>
-
-        <div id="keyCount">
-            🔑 0 / 5
-        </div>
-
-        <div id="timer">
-            10:00
-        </div>
-
+        <div id="role">角色：玩家</div>
+        <div id="keyCount">🔑 0 / 5</div>
+        <div id="timer">10:00</div>
     </div>
 
     <!-- 遊戲畫面 -->
     <div id="gameArea" class="hidden">
-
-        <canvas
-            id="gameCanvas"
-            width="720"
-            height="720">
-        </canvas>
-
+        <canvas id="gameCanvas" width="720" height="720"></canvas>
     </div>
 
     <!-- 遊戲結束 -->
     <div id="gameOver" class="hidden">
-
-        <h2 id="resultText">
-            Game Over
-        </h2>
-
-        <button id="restartBtn">
-            再玩一次
-        </button>
-
+        <h2 id="resultText">Game Over</h2>
+        <div id="scoreDisplay"></div>
+        <button id="restartBtn">再玩一次</button>
     </div>
 
     <!-- 手機控制 -->
     <div id="mobileUI" class="hidden">
-
         <div id="joystick"></div>
-
-        <button id="runBtn" class="mobile-btn">
-            🏃
-        </button>
-
-        <button id="flashBtn" class="mobile-btn">
-            🔦
-        </button>
-
-        <button id="actionBtn" class="mobile-btn">
-            ✋
-        </button>
-
+        <button id="runBtn" class="mobile-btn">🏃</button>
+        <button id="flashBtn" class="mobile-btn">🔦</button>
+        <button id="actionBtn" class="mobile-btn">✋</button>
     </div>
 
-    <!-- 程式載入順序（完整版） -->
-    <!-- 配置與工具 -->
-    <script src="constants.js"></script>
-    <script src="performance.js"></script>
-    
-    <!-- 遊戲系統 -->
+    <!-- 遊戲腳本載入 -->
     <script src="maze.js"></script>
     <script src="player.js"></script>
     <script src="ghost.js"></script>
     <script src="items.js"></script>
     <script src="lighting.js"></script>
-    
-    <!-- 輸入與控制 -->
     <script src="input-handler.js"></script>
     <script src="joystick.js"></script>
-    
-    <!-- 音效與網路 -->
-    <script src="sound.js"></script>
-    <script src="network.js"></script>
-    
-    <!-- UI 與系統 -->
-    <script src="animation.js"></script>
-    <script src="difficulty.js"></script>
-    <script src="ui.js"></script>
-    
-    <!-- 主遊戲迴圈 -->
     <script src="game.js"></script>
-
 </body>
 </html>
