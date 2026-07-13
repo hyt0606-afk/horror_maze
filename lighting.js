@@ -1,30 +1,23 @@
 // =============================
-// lighting.js
+// lighting.js - 優化版本
 // 手電筒與黑暗系統
 // =============================
 
 // 手電筒狀態
 let flashlightOn = true;
 
-// 光束長度
-const LIGHT_DISTANCE = 220;
-
-// 光束角度（90°）
-const LIGHT_ANGLE = Math.PI / 2;
-
 // 開關手電筒
 function toggleFlashlight() {
     flashlightOn = !flashlightOn;
 }
 
-// 畫黑暗與光束
+// 畫黑暗與光束（優化版）
 function drawLighting(ctx) {
-
     ctx.save();
 
     // 全畫面黑暗
-    ctx.fillStyle = "rgba(0,0,0,0.94)";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = `rgba(0,0,0,${DARKNESS_OPACITY})`;
+    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
     if (!flashlightOn) {
         ctx.restore();
@@ -34,22 +27,18 @@ function drawLighting(ctx) {
     const px = player.x * TILE_SIZE + TILE_SIZE / 2;
     const py = player.y * TILE_SIZE + TILE_SIZE / 2;
 
+    // 根據玩家方向計算光束角度
     let angle = 0;
-
     switch (player.direction) {
-
         case "up":
             angle = -Math.PI / 2;
             break;
-
         case "down":
             angle = Math.PI / 2;
             break;
-
         case "left":
             angle = Math.PI;
             break;
-
         case "right":
             angle = 0;
             break;
@@ -59,15 +48,12 @@ function drawLighting(ctx) {
 
     // 漸層光束
     const gradient = ctx.createRadialGradient(
-        px,
-        py,
-        20,
-        px,
-        py,
-        LIGHT_DISTANCE
+        px, py, LIGHT_INNER_RADIUS,
+        px, py, LIGHT_DISTANCE
     );
 
     gradient.addColorStop(0, "rgba(255,255,255,1)");
+    gradient.addColorStop(0.7, "rgba(255,255,255,0.5)");
     gradient.addColorStop(1, "rgba(255,255,255,0)");
 
     ctx.fillStyle = gradient;
@@ -76,8 +62,7 @@ function drawLighting(ctx) {
     ctx.moveTo(px, py);
 
     ctx.arc(
-        px,
-        py,
+        px, py,
         LIGHT_DISTANCE,
         angle - LIGHT_ANGLE / 2,
         angle + LIGHT_ANGLE / 2
@@ -87,39 +72,4 @@ function drawLighting(ctx) {
     ctx.fill();
 
     ctx.restore();
-}
-
-// 判斷鬼是否可見
-function ghostVisible() {
-
-    const dx = ghost.x - player.x;
-    const dy = ghost.y - player.y;
-
-    const distance = Math.sqrt(dx * dx + dy * dy);
-
-    if (distance > 5) {
-        return false;
-    }
-
-    return flashlightOn;
-}
-
-// F 鍵切換手電筒
-document.addEventListener("keydown", function (e) {
-
-    if (e.key === "f" || e.key === "F") {
-
-        toggleFlashlight();
-
-    }
-
-});
-
-// 手機按鈕
-const flashBtn = document.getElementById("flashBtn");
-
-if (flashBtn) {
-
-    flashBtn.addEventListener("click", toggleFlashlight);
-
 }

@@ -1,31 +1,27 @@
 // =============================
-// items.js
-// 鑰匙與出口
+// items.js - 優化版本
+// 鑰匙與出口系統
 // =============================
 
 let keys = [];
 let exitDoor = {
-    x: 13,
-    y: 13,
+    x: GHOST_START_X,
+    y: GHOST_START_Y,
     open: false
 };
 
-const TOTAL_KEYS = 5;
-
 // 建立物品
 function createItems() {
-
     keys = [];
 
+    // 生成指定數量的鑰匙
     while (keys.length < TOTAL_KEYS) {
-
         const x = Math.floor(Math.random() * (MAP_WIDTH - 2)) + 1;
         const y = Math.floor(Math.random() * (MAP_HEIGHT - 2)) + 1;
 
+        // 檢查有效性
         if (isWall(x, y)) continue;
-
-        if (x === 1 && y === 1) continue;
-
+        if (x === PLAYER_START_X && y === PLAYER_START_Y) continue;
         if (keys.some(k => k.x === x && k.y === y)) continue;
 
         keys.push({
@@ -33,80 +29,65 @@ function createItems() {
             y,
             collected: false
         });
-
     }
 
     exitDoor.open = false;
-
 }
 
-// 更新
+// 更新物品
 function updateItems() {
-
+    // 檢查鑰匙碰撞
     for (const key of keys) {
-
         if (key.collected) continue;
 
         if (player.x === key.x && player.y === key.y) {
-
             key.collected = true;
-
             keysCollected++;
-
             updateHUD();
 
+            // 所有鑰匙都收集後打開出口
             if (keysCollected >= TOTAL_KEYS) {
-
                 exitDoor.open = true;
-
             }
-
         }
-
     }
 
+    // 檢查出口碰撞
     if (
         exitDoor.open &&
         player.x === exitDoor.x &&
         player.y === exitDoor.y
     ) {
-
-        gameOver("🎉 成功逃脫！");
-
+        gameOver(RESULT_WIN);
     }
-
 }
 
 // 畫物品
 function drawItems(ctx) {
-
-    // 鑰匙
+    // 畫未收集的鑰匙
     for (const key of keys) {
-
         if (key.collected) continue;
 
-        ctx.fillStyle = "gold";
-
+        ctx.fillStyle = KEY_COLOR;
         ctx.beginPath();
         ctx.arc(
             key.x * TILE_SIZE + TILE_SIZE / 2,
             key.y * TILE_SIZE + TILE_SIZE / 2,
-            8,
+            KEY_SIZE,
             0,
             Math.PI * 2
         );
         ctx.fill();
-
     }
 
-    // 出口
-    ctx.fillStyle = exitDoor.open ? "#00ff66" : "#666";
+    // 畫出口
+    const exitColor = exitDoor.open ? EXIT_COLOR_OPEN : EXIT_COLOR_CLOSED;
+    ctx.fillStyle = exitColor;
 
     ctx.fillRect(
-        exitDoor.x * TILE_SIZE + 8,
-        exitDoor.y * TILE_SIZE + 8,
-        TILE_SIZE - 16,
-        TILE_SIZE - 16
+        exitDoor.x * TILE_SIZE + EXIT_PADDING,
+        exitDoor.y * TILE_SIZE + EXIT_PADDING,
+        TILE_SIZE - 2 * EXIT_PADDING,
+        TILE_SIZE - 2 * EXIT_PADDING
     );
-
 }

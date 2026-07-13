@@ -1,33 +1,26 @@
 // =============================
 // Horror Maze Online
-// game.js
+// game.js - 優化版本
 // =============================
 
 // Canvas
 const canvas = document.getElementById("gameCanvas");
-const ctx = canvas.getContext("2d");
-
-// 地圖設定
-const TILE_SIZE = 48;
-const MAP_WIDTH = 15;
-const MAP_HEIGHT = 15;
+const ctx = canvas.getContext("2d", { alpha: false });
 
 // 遊戲狀態
 let gameRunning = false;
 let keysCollected = 0;
-let totalKeys = 5;
-let gameTime = 600; // 秒
+let gameTime = GAME_TIME;
 
 // 初始化
-function initGame(){
-
+function initGame() {
     createMaze();
-
     createPlayer();
-
     createGhost();
-    
     createItems();
+    
+    keysCollected = 0;
+    gameTime = GAME_TIME;
     
     updateHUD();
     
@@ -36,83 +29,81 @@ function initGame(){
     document.getElementById("menu").classList.add("hidden");
     document.getElementById("hud").classList.remove("hidden");
     document.getElementById("gameArea").classList.remove("hidden");
+    
+    // 初始化性能監控
+    PerformanceMonitor.init();
+    DrawOptimizer.init();
+    InputHandler.init();
 
     requestAnimationFrame(gameLoop);
-
 }
 
-// 主迴圈
-function gameLoop(){
-
-    if(!gameRunning) return;
-
-    update();
-
-    draw();
+// 主迴圈（優化版）
+let lastFrameTime = 0;
+function gameLoop(currentTime) {
+    if (!gameRunning) return;
+    
+    PerformanceMonitor.recordFrame();
+    
+    // 固定時間步進（可選）
+    const deltaTime = currentTime - lastFrameTime;
+    lastFrameTime = currentTime;
+    
+    PerformanceMonitor.measure('update', () => update());
+    PerformanceMonitor.measure('draw', () => draw());
 
     requestAnimationFrame(gameLoop);
-
 }
 
-// 更新
-function update(){
-
+// 更新遊戲邏輯
+function update() {
+    if (!gameRunning) return;
+    
     updatePlayer();
-
     updateGhost();
-
     updateItems();
-    
     updateTimer();
-    
 }
 
-// 繪圖
-function draw(){
-
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-
-drawMaze(ctx);
-
-drawItems(ctx);
-
-drawPlayer(ctx);
-
-drawGhost(ctx);
-
-    // 最後蓋上一層黑暗
-drawLighting(ctx);
+// 繪製遊戲
+function draw() {
+    // 使用離屏 canvas 優化繪製
+    const offscreenCtx = DrawOptimizer.getOffscreenContext();
+    DrawOptimizer.clear();
     
+    drawMaze(offscreenCtx);
+    drawItems(offscreenCtx);
+    drawPlayer(offscreenCtx);
+    drawGhost(offscreenCtx);
+    drawLighting(offscreenCtx);
+    
+    // 複製到主 canvas
+    DrawOptimizer.copyToMain(ctx);
 }
 
-// HUD
-function updateHUD(){
-
+// HUD 更新
+function updateHUD() {
     document.getElementById("keyCount").innerText =
-        "🔑 " + keysCollected + " / " + totalKeys;
-
+        `🔑 ${keysCollected} / ${TOTAL_KEYS}`;
 }
 
-// 計時
-function updateTimer(){
-
-    if(gameTime>0){
-
+// 計時器更新
+function updateTimer() {
+    if (gameTime > 0) {
         gameTime--;
-
+    } else {
+        gameOver(RESULT_GAME_OVER);
     }
 
-    let min = Math.floor(gameTime/60);
-    let sec = gameTime%60;
+    let min = Math.floor(gameTime / 60);
+    let sec = gameTime % 60;
 
     document.getElementById("timer").innerText =
-        `${min}:${sec.toString().padStart(2,"0")}`;
-
+        `${min}:${sec.toString().padStart(2, "0")}`;
 }
 
-// 結束
-function gameOver(text){
-
+// 遊戲結束
+function gameOver(text) {
     gameRunning = false;
 
     document.getElementById("gameOver")
@@ -120,17 +111,13 @@ function gameOver(text){
 
     document.getElementById("resultText")
         .innerText = text;
-
 }
 
-// 開始按鈕
+// 事件監聽（優化版 - 統一管理）
 document.getElementById("singleBtn")
-.addEventListener("click",initGame);
+    .addEventListener("click", initGame);
 
-// 重新開始
 document.getElementById("restartBtn")
-.addEventListener("click",()=>{
-
-    location.reload();
-
-});
+    .addEventListener("click", () => {
+        location.reload();
+    });
