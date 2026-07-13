@@ -2,451 +2,172 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>👻 恐怖隨機迷宮逃脫 - 多人聯機版</title>
-<style>
-body { background: #000; color: white; text-align: center; font-family: sans-serif; padding-top: 15px; user-select: none; }
-#lobby-screen { width: 360px; margin: 50px auto; padding: 20px; background: #111; border: 3px solid #444; border-radius: 10px; box-sizing: border-box; }
-#match-timer { font-size: 24px; color: #ffcc00; font-weight: bold; margin: 20px; }
-.player-slot { display: inline-block; width: 60px; margin: 10px; padding: 5px; background: #222; border-radius: 5px; font-size: 12px; }
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>👻 Horror Maze Online</title>
 
-#game-screen { display: none; }
-#level { font-size: 22px; color: #ff0055; font-weight: bold; margin-bottom: 5px; }
-#role-status { font-size: 16px; color: #00ffff; margin-bottom: 10px; font-weight: bold; }
-#game { margin: 15px auto; display: grid; grid-template-columns: repeat(12, 30px); width: 360px; border: 3px solid #444; background: #111; }
-.c { width: 30px; height: 30px; border: 1px solid #222; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-size: 14px; }
-.wall { background: #2a2a2a; border: 1px solid #3a3a3a; }
-.floor { background: #111; }
-.e { background: #00aa00; box-shadow: inset 0 0 6px #00ff00; }
-.k { background: #ffcc00; box-shadow: inset 0 0 6px #ffff00; }
-
-/* 角色顏色樣式 */
-.m { background: #cc0000; box-shadow: inset 0 0 6px #ff0000; border-radius: 50%; } /* 鬼：紅色 */
-.p-blue { background: #00aaff; box-shadow: inset 0 0 6px #00ffff; border-radius: 4px; } /* 人1：天藍 */
-.p-orange { background: #ff7700; box-shadow: inset 0 0 6px #ffaa00; border-radius: 4px; } /* 人2：橘色 */
-.p-purple { background: #aa00ff; box-shadow: inset 0 0 6px #ff00ff; border-radius: 4px; } /* 人3：紫色 */
-.p-pink { background: #ff00aa; box-shadow: inset 0 0 6px #ff55ff; border-radius: 4px; } /* 人4：粉色 */
-
-.controls { margin: 15px auto; display: grid; grid-template-columns: repeat(3, 70px); grid-gap: 10px; width: 230px; justify-content: center; }
-button { font-size: 22px; height: 55px; width: 70px; cursor: pointer; background: #222; color: white; border: 2px solid #555; border-radius: 8px; }
-.up { grid-column: 2; }
-.left { grid-column: 1; grid-row: 2; }
-.down { grid-column: 2; grid-row: 2; }
-.right { grid-column: 3; grid-row: 2; }
-#msg { font-size: 18px; font-weight: bold; margin: 15px; min-height: 28px; color: #aaa; }
-#restart-btn { font-size: 16px; padding: 8px 20px; background: #ff3333; border: none; border-radius: 5px; margin-top: 10px; font-weight: bold; cursor: pointer; display: none; color: white; }
-</style>
+<link rel="stylesheet" href="style.css">
 </head>
+
 <body>
 
-<!-- 1. 多人匹配大廳畫面 -->
-<div id="lobby-screen">
-  <h2>🌐 正在搜尋倖存者...</h2>
-  <div id="match-timer">00:00</div>
-  <div id="player-list">
-    <div class="player-slot" id="slot0">👤 你</div>
-    <div class="player-slot" id="slot1">⏳ 匹配中</div>
-    <div class="player-slot" id="slot2">⏳ 匹配中</div>
-    <div class="player-slot" id="slot3">⏳ 匹配中</div>
-    <div class="player-slot" id="slot4">⏳ 匹配中</div>
-  </div>
-  <p id="lobby-msg" style="color: #aaa; font-size: 14px; margin-top: 20px;">超過 1 分鐘未滿員將自動分配人機補位...</p>
+<!-- ===== 大廳 ===== -->
+
+<div id="lobby">
+
+<h1>👻 Horror Maze Online</h1>
+
+<p>多人恐怖逃脫</p>
+
+<input id="playerName"
+placeholder="輸入你的名字"
+maxlength="12">
+
+<br><br>
+
+<button id="createRoom">
+建立房間
+</button>
+
+<button id="joinRoom">
+加入房間
+</button>
+
+<br><br>
+
+<input id="roomCode"
+placeholder="房間代碼">
+
+<div id="roomInfo"></div>
+
 </div>
 
-<!-- 2. 遊戲核心畫面 -->
-<div id="game-screen">
-  <h2>👻 恐怖隨機迷宮逃脫</h2>
-  <div id="level">第 1 關</div>
-  <div id="role-status">陣營身份：載入中...</div>
-  <div id="game"></div>
-  <p id="msg">🔑 找到黃色鑰匙，前往綠色出口逃出去！</p>
-  <button id="restart-btn" onclick="backToLobby()">🔄 重新匹配</button>
-  <div class="controls">
-   <button class="up" onclick="move(0,-1)">⬆️</button>
-   <button class="left" onclick="move(-1,0)">⬅️</button>
-   <button class="down" onclick="move(0,1)">⬇️</button>
-   <button class="right" onclick="move(1,0)">➡️</button>
-  </div>
+<!-- ===== 等待玩家 ===== -->
+
+<div id="waiting" class="hidden">
+
+<h2>等待其他玩家加入...</h2>
+
+<h1 id="codeDisplay"></h1>
+
+<div id="playerList"></div>
+
+<button id="startGame">
+開始遊戲
+</button>
+
 </div>
 
-<script>
-let currentLevel = 1;
-let map = [];
-const MAP_SIZE = 12;
-let key, gameover;
-let myRole = "human"; 
+<!-- ===== HUD ===== -->
 
-let players = [
-  { id: 0, x: 0, y: 0, type: "human", isAI: false, colorClass: "p-blue", name: "你", alive: true },
-  { id: 1, x: 0, y: 0, type: "human", isAI: true, colorClass: "p-orange", name: "玩家_橘", alive: true },
-  { id: 2, x: 0, y: 0, type: "human", isAI: true, colorClass: "p-purple", name: "玩家_紫", alive: true },
-  { id: 3, x: 0, y: 0, type: "human", isAI: true, colorClass: "p-pink", name: "玩家_粉", alive: true },
-  { id: 4, x: 0, y: 0, type: "ghost", isAI: true, colorClass: "m", name: "鬼魂", alive: true }
-];
+<div id="hud" class="hidden">
 
-function shuffle(array) {
-  for (let i = array.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [array[i], array[j]] = [array[j], array[i]];
-  }
-  return array;
-}
+<div id="role">
+角色：
+</div>
 
-function startMatching() {
-  document.getElementById("lobby-screen").style.display = "block";
-  document.getElementById("game-screen").style.display = "none";
-  
-  let elapsed = 0;
-  let matchedPlayers = 1;
-  document.getElementById("match-timer").innerHTML = "00:00";
-  
-  let matchInterval = setInterval(() => {
-    elapsed++;
-    let sec = elapsed < 10 ? "0" + elapsed : elapsed;
-    document.getElementById("match-timer").innerHTML = "00:" + sec;
-    
-    if (matchedPlayers < 5 && Math.random() < 0.4 && elapsed < 12) {
-      matchedPlayers++;
-      let names = ["小明", "狂暴阿杰", "歐皇本皇", "草叢路過"];
-      document.getElementById("slot" + (matchedPlayers - 1)).innerHTML = "👤 " + names[matchedPlayers - 2];
-      document.getElementById("slot" + (matchedPlayers - 1)).style.color = "#00ff00";
-    }
-    
-    if (elapsed >= 15 || matchedPlayers === 5) {
-      clearInterval(matchInterval);
-      for (let i = matchedPlayers; i < 5; i++) {
-        document.getElementById("slot" + i).innerHTML = "🤖 機器人" + i;
-        document.getElementById("slot" + i).style.color = "#ffaa00";
-      }
-      document.getElementById("lobby-msg").innerHTML = "🔥 匹配成功！正在隨機分配身分...";
-      
-      setTimeout(() => {
-        setupMultiplayerRoles();
-      }, 1500);
-    }
-  }, 1000);
-}
+<div id="keys">
+鑰匙：0/5
+</div>
 
-function setupMultiplayerRoles() {
-  document.getElementById("lobby-screen").style.display = "none";
-  document.getElementById("game-screen").style.display = "block";
-  currentLevel = 1;
+<div id="staminaBox">
 
-  players = [
-    { id: 0, x: 0, y: 0, type: "human", isAI: false, colorClass: "p-blue", name: "你", alive: true },
-    { id: 1, x: 0, y: 0, type: "human", isAI: true, colorClass: "p-orange", name: "隊友橘", alive: true },
-    { id: 2, x: 0, y: 0, type: "human", isAI: true, colorClass: "p-purple", name: "隊友紫", alive: true },
-    { id: 3, x: 0, y: 0, type: "human", isAI: true, colorClass: "p-pink", name: "隊友粉", alive: true },
-    { id: 4, x: 0, y: 0, type: "ghost", isAI: true, colorClass: "m", name: "厲鬼", alive: true }
-  ];
+<div id="staminaBar"></div>
 
-  let ghostIndex = Math.floor(Math.random() * 5);
-  if (ghostIndex === 0) {
-    players[0].type = "ghost";
-    players[0].colorClass = "m";
-    players[0].name = "你 (鬼魂)";
-    
-    players[4].type = "human";
-    players[4].colorClass = "p-blue";
-    players[4].name = "隊友藍";
-    myRole = "ghost";
-  } else {
-    myRole = "human";
-    players[ghostIndex].type = "ghost";
-    players[ghostIndex].colorClass = "m";
-    players[ghostIndex].name = "鬼魂";
-  }
+</div>
 
-  generateRandomMap();
-}
+<div id="timer">
 
-function isReachable(sx, sy, tx, ty, tempMap) {
-  let queue = [{x: sx, y: sy}];
-  let visited = Array(MAP_SIZE).fill().map(() => Array(MAP_SIZE).fill(false));
-  visited[sy][sx] = true;
-  let dirs = [{x:0,y:1}, {x:0,y:-1}, {x:1,y:0}, {x:-1,y:0}];
-  while(queue.length > 0) {
-    let curr = queue.shift();
-    if (curr.x === tx && curr.y === ty) return true;
-    for (let d of dirs) {
-      let nx = curr.x + d.x, ny = curr.y + d.y;
-      if (nx >= 0 && nx < MAP_SIZE && ny >= 0 && ny < MAP_SIZE && tempMap[ny][nx] !== "#" && !visited[ny][nx]) {
-        visited[ny][nx] = true;
-        queue.push({x: nx, y: ny});
-      }
-    }
-  }
-  return false;
-}
+10:00
 
-let kx, ky, ex, ey;
+</div>
 
-function generateRandomMap() {
-  document.getElementById("level").innerHTML = "第 " + currentLevel + " 關";
-  
-  if (myRole === "ghost") {
-    document.getElementById("role-status").innerHTML = "👿 你的身份：【鬼魂】— 目標：殺光所有人！";
-    document.getElementById("role-status").style.color = "#ff3333";
-  } else {
-    document.getElementById("role-status").innerHTML = "🏃 你的身份：【人類】— 目標：拿鑰匙開門逃脫！";
-    document.getElementById("role-status").style.color = "#00aaff";
-  }
+</div>
 
-  while (true) {
-    map = [];
-    for(let y=0; y<MAP_SIZE; y++) {
-      let row = [];
-      for(let x=0; x<MAP_SIZE; x++) {
-        row.push((y === 0 || y === MAP_SIZE-1 || x === 0 || x === MAP_SIZE-1) ? "#" : ".");
-      }
-      map.push(row);
-    }
+<!-- ===== 遊戲畫面 ===== -->
 
-    let emptyCells = [];
-    for(let y=1; y<=MAP_SIZE-2; y++) {
-      for(let x=1; x<=MAP_SIZE-2; x++) {
-        emptyCells.push({x: x, y: y});
-      }
-    }
-    shuffle(emptyCells);
+<div id="gameContainer" class="hidden">
 
-    kx = emptyCells.pop().x; ky = emptyCells.pop().y;
-    ex = emptyCells.pop().x; ey = emptyCells.pop().y;
+<canvas id="gameCanvas"
+width="720"
+height="720"></canvas>
 
-    players.forEach(p => {
-      let pos = emptyCells.pop();
-      p.x = pos.x; p.y = pos.y;
-      p.alive = true;
-    });
+</div>
 
-    let wallCount = 20;
-    for(let i=0; i<wallCount; i++) {
-      if(emptyCells.length > 0) {
-        let wPos = emptyCells.pop();
-        map[wPos.y][wPos.x] = "#";
-      }
-    }
+<!-- ===== 勝負畫面 ===== -->
 
-    let p0 = players[0];
-    if (isReachable(p0.x, p0.y, kx, ky, map) && isReachable(kx, ky, ex, ey, map)) {
-      break;
-    }
-  }
+<div id="result" class="hidden">
 
-  key = false;
-  gameover = false;
-  if(myRole === "ghost") {
-    document.getElementById("msg").innerHTML = "🩸 別讓人類拿到鑰匙或走到綠色出口！";
-  } else {
-    document.getElementById("msg").innerHTML = "🔑 找到黃色鑰匙，前往綠色出口逃出去！";
-  }
-  document.getElementById("msg").style.color = "#aaa";
-  document.getElementById("restart-btn").style.display = "none";
-  draw();
-}
+<h1 id="resultTitle"></h1>
 
-function draw(){
- let g = document.getElementById("game"); g.innerHTML = "";
- for(let y=0; y<MAP_SIZE; y++){
-  for(let x=0; x<MAP_SIZE; x++){
-   let d = document.createElement("div"); d.className = "c ";
-   if(map[y][x] == "#") d.className += "wall"; else d.className += "floor";
-   
-   if(x == ex && y == ey) d.className += " e";
-   if(x == kx && y == ky && !key) d.className += " k";
-   
-   players.forEach(p => {
-     if(p.alive && p.x == x && p.y == y) {
-       d.className += " " + p.colorClass;
-     }
-   });
-   
-   g.appendChild(d);
-  }
- }
-}
+<button id="playAgain">
 
-function move(x,y){
- if(gameover) return; 
- let me = players[0];
- if(!me.alive) return;
+再玩一次
 
- let nx = me.x + x, ny = me.y + y; 
- if(map[ny][nx] == "#") return; 
- me.x = nx; me.y = ny;
+</button>
 
- if(myRole === "human" && me.x == kx && me.y == ky && !key){ 
-  key = true; 
-  document.getElementById("msg").innerHTML = "🔑 順利拿到鑰匙了！快逃往綠色出口！"; 
-  document.getElementById("msg").style.color = "#ffff00"; 
- }
+</div>
 
- if(myRole === "human" && me.x == ex && me.y == ey && key){ 
-  currentLevel++; 
-  document.getElementById("msg").innerHTML = "🎉 成功逃脫！即將載入第 " + currentLevel + " 關..."; 
-  document.getElementById("msg").style.color = "#00ff00"; 
-  gameover = true;
-  draw();
-  setTimeout(generateRandomMap, 1500);
-  return; 
- }
+<!-- ===== 手機控制 ===== -->
 
- aiTakeTurn();
- checkCollisions();
- draw();
-}
+<div id="mobileControls" class="hidden">
 
-function aiTakeTurn() {
-  let ghost = players.find(p => p.type === "ghost");
-  
-  players.forEach(p => {
-    if(!p.isAI || !p.alive) return;
-    
-    if(p.type === "ghost") {
-      let target = findClosestHuman(p.x, p.y);
-      if(target) {
-        let nextStep = bfsFindPath(p.x, p.y, target.x, target.y);
-        if(nextStep) { p.x = nextStep.x; p.y = nextStep.y; }
-      }
-    } 
-    else {
-      let tx = kx, ty = ky;
-      if (key) { tx = ex; ty = ey; } 
-      
-      let nextStep = bfsFindPath(p.x, p.y, tx, ty);
-      if(ghost && Math.abs(p.x - ghost.x) + Math.abs(p.y - ghost.y) <= 2) {
-         let escapeMoves = [{x:0,y:1},{x:0,y:-1},{x:1,y:0},{x:-1,y:0}].filter(m => {
-           let nx = p.x+m.x, ny = p.y+m.y;
-           return nx>=0 && nx<MAP_SIZE && ny>=0 && ny<MAP_SIZE && map[ny][nx]!="#";
-         });
-         if(escapeMoves.length > 0) {
-           let m = escapeMoves[Math.floor(Math.random()*escapeMoves.length)];
-           p.x += m.x; p.y += m.y;
-           return;
-         }
-      }
-      if(nextStep) { p.x = nextStep.x; p.y = nextStep.y; }
-      
-      if(p.x == kx && p.y == ky && !key) {
-        key = true;
-        document.getElementById("msg").innerHTML = "🔑 隊友拿到了鑰匙！大家快衝向出口！";
-        document.getElementById("msg").style.color = "#ffff00";
-      }
-      if(p.x == ex && p.y == ey && key) {
-        currentLevel++; 
-        document.getElementById("msg").innerHTML = "🎉 隊友成功帶領大家逃脫！進入第 " + currentLevel + " 關..."; 
-        document.getElementById("msg").style.color = "#00ff00"; 
-        gameover = true;
-        setTimeout(generateRandomMap, 1500);
-      }
-    }
-  });
-}
+<div id="joystick">
 
-function findClosestHuman(gx, gy) {
-  let minDist = Infinity;
-  let target = null;
-  players.forEach(p => {
-    if(p.type === "human" && p.alive) {
-      let dist = Math.abs(p.x - gx) + Math.abs(p.y - gy);
-      if(dist < minDist) { minDist = dist; target = p; }
-    }
-  });
-  return target;
-}
+<div id="stick"></div>
 
-function checkCollisions() {
-  let ghost = players.find(p => p.type === "ghost");
-  if(!ghost) return;
+</div>
 
-  players.forEach(p => {
-    if(p.type === "human" && p.alive && p.x === ghost.x && p.y === ghost.y) {
-      p.alive = false;
-      if(p.id === 0) {
-        if(myRole === "human") {
-          document.getElementById("msg").innerHTML = "💀 你被鬼抓到，慘遭淘汰了！";
-          document.getElementById("msg").style.color = "#ff3333";
-          gameover = true;
-          endGame();
-        }
-      } else {
-        document.getElementById("msg").innerHTML = `💀 慘劇！${p.name} 被厲鬼吞噬了！`;
-        document.getElementById("msg").style.color = "#ff5555";
-      }
-    }
-  });
+<div id="buttons">
 
-  if(myRole === "ghost") {
-    let aliveHumans = players.filter(p => p.type === "human" && p.alive);
-    if(aliveHumans.length === 0) {
-      document.getElementById("msg").innerHTML = "🩸 屠殺殆盡！你成功滅殺了所有人類玩家！";
-      document.getElementById("msg").style.color = "#ff0000";
-      gameover = true;
-      endGame();
-    } else {
-      let myGhost = players[0];
-      if(!myGhost.alive) return;
-      players.forEach(p => {
-        if(p.type === "human" && p.alive && p.x === myGhost.x && p.y === myGhost.y) {
-          p.alive = false;
-          document.getElementById("msg").innerHTML = `🩸 你成功抓到了 ${p.name}！`;
-          document.getElementById("msg").style.color = "#ff3333";
-        }
-      });
-      let checkAgain = players.filter(p => p.type === "human" && p.alive);
-      if(checkAgain.length === 0) {
-         document.getElementById("msg").innerHTML = "🩸 恭喜獲勝！你成功殺光了所有人！";
-         document.getElementById("msg").style.color = "#ff0000";
-         gameover = true;
-         endGame();
-      }
-    }
-  }
-}
+<button id="runBtn">
 
-function bfsFindPath(sx, sy, tx, ty) {
-  let queue = [ {x: sx, y: sy, path: null} ];
-  let visited = Array(MAP_SIZE).fill().map(() => Array(MAP_SIZE).fill(false));
-  visited[sy][sx] = true;
-  let dirs = [{x:0, y:1}, {x:0, y:-1}, {x:1, y:0}, {x:-1, y:0}];
-  
-  while(queue.length > 0) {
-    let curr = queue.shift();
-    if (curr.x === tx && curr.y === ty) return curr.path;
-    for (let d of dirs) {
-      let nx = curr.x + d.x, ny = curr.y + d.y;
-      if (nx >= 0 && nx < MAP_SIZE && map[ny][nx] !== "#" && !visited[ny][nx]) {
-        visited[ny][nx] = true;
-        let firstStep = curr.path === null ? {x: nx, y: ny} : curr.path;
-        queue.push({x: nx, y: ny, path: firstStep});
-      }
-    }
-  }
-  return null;
-}
+🏃
 
-function endGame() { 
- draw(); 
- document.getElementById("restart-btn").style.display = "inline-block"; 
-}
+</button>
 
-function backToLobby() {
-  for(let i=1; i<=4; i++) {
-    document.getElementById("slot"+i).innerHTML = "⏳ 匹配中";
-    document.getElementById("slot"+i).style.color = "";
-  }
-  startMatching();
-}
+<button id="flashBtn">
 
-document.addEventListener('keydown', function(event) {
- if(['ArrowUp', 'w', 'W'].includes(event.key)) { event.preventDefault(); move(0, -1); }
- if(['ArrowDown', 's', 'S'].includes(event.key)) { event.preventDefault(); move(0, 1); }
- if(['ArrowLeft', 'a', 'A'].includes(event.key)) { event.preventDefault(); move(-1, 0); }
- if(['ArrowRight', 'd', 'D'].includes(event.key)) { event.preventDefault(); move(1, 0); }
-});
+🔦
 
-// 啟動匹配
-startMatching();
-</script>
+</button>
+
+<button id="actionBtn">
+
+✋
+
+</button>
+
+</div>
+
+</div>
+
+<!-- ===== 音效 ===== -->
+
+<audio
+id="bgm"
+loop></audio>
+
+<audio id="footstep"></audio>
+
+<audio id="heartbeat"></audio>
+
+<audio id="ghostSound"></audio>
+
+<!-- ===== 程式 ===== -->
+
+<script src="maze.js"></script>
+
+<script src="player.js"></script>
+
+<script src="ghost.js"></script>
+
+<script src="joystick.js"></script>
+
+<script src="sound.js"></script>
+
+<script src="network.js"></script>
+
+<script src="game.js"></script>
+
 </body>
 </html>
