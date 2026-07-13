@@ -3,19 +3,21 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>👻 恐怖隨機迷宮逃脫</title>
+<title>👻 恐怖隨機迷宮逃脫 - 進階版</title>
 <style>
-body { background: #000; color: white; text-align: center; font-family: sans-serif; padding-top: 20px; user-select: none; }
-#level { font-size: 20px; color: #ff0055; font-weight: bold; margin-bottom: 5px; }
-#game { margin: 20px auto; display: grid; grid-template-columns: repeat(8, 40px); width: 320px; border: 3px solid #444; background: #111; }
-.c { width: 40px; height: 40px; border: 1px solid #222; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+body { background: #000; color: white; text-align: center; font-family: sans-serif; padding-top: 15px; user-select: none; }
+#level { font-size: 22px; color: #ff0055; font-weight: bold; margin-bottom: 5px; }
+#ai-status { font-size: 14px; color: #ff8800; margin-bottom: 10px; font-weight: bold; }
+/* 12x12 地圖，每格 30px，總寬度 360px */
+#game { margin: 15px auto; display: grid; grid-template-columns: repeat(12, 30px); width: 360px; border: 3px solid #444; background: #111; }
+.c { width: 30px; height: 30px; border: 1px solid #222; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-size: 16px; }
 .wall { background: #2a2a2a; border: 1px solid #3a3a3a; }
 .floor { background: #111; }
-.p { background: #0055ff; box-shadow: inset 0 0 8px #00ffff; border-radius: 4px; }
-.e { background: #00aa00; box-shadow: inset 0 0 8px #00ff00; }
-.k { background: #ffcc00; box-shadow: inset 0 0 8px #ffff00; }
-.m { background: #cc0000; box-shadow: inset 0 0 8px #ff0000; border-radius: 50%; }
-.controls { margin: 20px auto; display: grid; grid-template-columns: repeat(3, 70px); grid-gap: 10px; width: 230px; justify-content: center; }
+.p { background: #0055ff; box-shadow: inset 0 0 6px #00ffff; border-radius: 4px; }
+.e { background: #00aa00; box-shadow: inset 0 0 6px #00ff00; }
+.k { background: #ffcc00; box-shadow: inset 0 0 6px #ffff00; }
+.m { background: #cc0000; box-shadow: inset 0 0 6px #ff0000; border-radius: 50%; }
+.controls { margin: 15px auto; display: grid; grid-template-columns: repeat(3, 70px); grid-gap: 10px; width: 230px; justify-content: center; }
 button { font-size: 22px; height: 55px; width: 70px; cursor: pointer; background: #222; color: white; border: 2px solid #555; border-radius: 8px; }
 .up { grid-column: 2; }
 .left { grid-column: 1; grid-row: 2; }
@@ -28,6 +30,7 @@ button { font-size: 22px; height: 55px; width: 70px; cursor: pointer; background
 <body>
 <h2>👻 恐怖隨機迷宮逃脫</h2>
 <div id="level">第 1 關</div>
+<div id="ai-status">👹 鬼魂狀態：路痴 (隨機亂晃)</div>
 <div id="game"></div>
 <p id="msg">🔑 找到黃色鑰匙，前往綠色出口逃出去！</p>
 <button id="restart-btn" onclick="retryLevel()">🔄 重試本關</button>
@@ -40,10 +43,10 @@ button { font-size: 22px; height: 55px; width: 70px; cursor: pointer; background
 <script>
 let currentLevel = 1;
 let map = [];
+const MAP_SIZE = 12; // 放大到 12x12
 let px, py, mx, my, kx, ky, ex, ey;
 let key, gameover;
 
-// 隨機打亂陣列的函數
 function shuffle(array) {
   for (let i = array.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -52,51 +55,56 @@ function shuffle(array) {
   return array;
 }
 
-// 核心功能：動態生成全新隨機地圖
 function generateRandomMap() {
   document.getElementById("level").innerHTML = "第 " + currentLevel + " 關";
+  
+  // 更新鬼魂智慧狀態顯示
+  let aiText = "👹 鬼魂狀態：";
+  if (currentLevel <= 3) aiText += "路痴 (隨機亂晃)";
+  else if (currentLevel <= 6) aiText += "尾隨狂 (直覺跟蹤)";
+  else aiText += "厲鬼化身 (智慧尋路繞牆)";
+  document.getElementById("ai-status").innerHTML = aiText;
+
   map = [];
   
-  // 1. 先建立四周都是牆壁，內部全是空地的 8x8 基本地圖
-  for(let y=0; y<8; y++) {
+  // 1. 建立 12x12 外牆
+  for(let y=0; y<MAP_SIZE; y++) {
     let row = [];
-    for(let x=0; x<8; x++) {
-      if(y === 0 || y === 7 || x === 0 || x === 7) {
-        row.push("#"); // 外牆
+    for(let x=0; x<MAP_SIZE; x++) {
+      if(y === 0 || y === MAP_SIZE-1 || x === 0 || x === MAP_SIZE-1) {
+        row.push("#");
       } else {
-        row.push("."); // 空地
+        row.push(".");
       }
     }
     map.push(row);
   }
 
-  // 2. 收集內部所有可以放東西的空地座標 (x: 1~6, y: 1~6)
+  // 2. 收集內部空地
   let emptyCells = [];
-  for(let y=1; y<=6; y++) {
-    for(let x=1; x<=6; x++) {
+  for(let y=1; y<=MAP_SIZE-2; y++) {
+    for(let x=1; x<=MAP_SIZE-2; x++) {
       emptyCells.push({x: x, y: y});
     }
   }
-
-  // 隨機打亂這些空地位置
   shuffle(emptyCells);
 
-  // 3. 從空地中依序抽出位置給玩家、鬼、鑰匙、出口
-  let pPos = emptyCells.pop(); px = pPos.x; py = pPos.y; // 玩家
-  let mPos = emptyCells.pop(); mx = mPos.x; my = mPos.y; // 鬼魂
-  let kPos = emptyCells.pop(); kx = kPos.x; ky = kPos.y; // 鑰匙
-  let ePos = emptyCells.pop(); ex = ePos.x; ey = ePos.y; // 出口
+  // 3. 抽籤角色位置
+  let pPos = emptyCells.pop(); px = pPos.x; py = pPos.y;
+  let mPos = emptyCells.pop(); mx = mPos.x; my = mPos.y;
+  let kPos = emptyCells.pop(); kx = kPos.x; ky = kPos.y;
+  let ePos = emptyCells.pop(); ex = ePos.x; ey = ePos.y;
 
-  // 4. 剩下空地隨機放一些內牆增加迷宮複雜度 (隨機放 8 個內牆)
-  let wallCount = 8;
+  // 4. 隨機放內牆 (地圖變大，增加到 22 個內牆)
+  let wallCount = 22;
   for(let i=0; i<wallCount; i++) {
     if(emptyCells.length > 0) {
       let wPos = emptyCells.pop();
+      // 確保不把重要道具堵死，簡單做隨機
       map[wPos.y][wPos.x] = "#";
     }
   }
 
-  // 重設遊戲狀態
   key = false;
   gameover = false;
   document.getElementById("msg").innerHTML = "🔑 找到黃色鑰匙，前往綠色出口逃出去！";
@@ -105,15 +113,14 @@ function generateRandomMap() {
   draw();
 }
 
-// 被抓到後的「重試本關」
 function retryLevel() {
   generateRandomMap();
 }
 
 function draw(){
  let g = document.getElementById("game"); g.innerHTML = "";
- for(let y=0; y<8; y++){
-  for(let x=0; x<8; x++){
+ for(let y=0; y<MAP_SIZE; y++){
+  for(let x=0; x<MAP_SIZE; x++){
    let d = document.createElement("div"); d.className = "c ";
    if(map[y][x] == "#") d.className += "wall"; else d.className += "floor";
    if(x == px && y == py) d.className += " p";
@@ -131,28 +138,25 @@ function move(x,y){
  if(map[ny][nx] == "#") return; 
  px = nx; py = ny;
 
- // 檢查是否拿到鑰匙
  if(px == kx && py == ky && !key){ 
   key = true; 
   document.getElementById("msg").innerHTML = "🔑 順利拿到鑰匙了！快前往綠色出口！"; 
   document.getElementById("msg").style.color = "#ffff00"; 
  }
 
- // 檢查是否成功逃脫
  if(px == ex && py == ey && key){ 
-  currentLevel++; // 關卡數加 1
+  currentLevel++; 
   document.getElementById("msg").innerHTML = "🎉 成功逃脫！即將載入第 " + currentLevel + " 關..."; 
   document.getElementById("msg").style.color = "#00ff00"; 
   gameover = true;
   draw();
-  // 延遲 1.5 秒後自動生成全新的隨機地圖
   setTimeout(generateRandomMap, 1500);
   return; 
  }
 
- monster();
+ // 玩家動完一步，鬼魂立刻動一步
+ monsterTurn();
 
- // 檢查是否被鬼抓到
  if(px == mx && py == my){ 
   document.getElementById("msg").innerHTML = "💀 慘了！你被鬼抓到了！"; 
   document.getElementById("msg").style.color = "#ff3333"; 
@@ -163,9 +167,91 @@ function move(x,y){
  draw();
 }
 
-function monster(){
- let dx = 0, dy = 0; if(mx < px) dx = 1; else if(mx > px) dx = -1; else if(my < py) dy = 1; else if(my > py) dy = -1;
- let nx = mx + dx, ny = my + dy; if(nx >= 0 && nx < 8 && ny >= 0 && ny < 8 && map[ny][nx] != "#"){ mx = nx; my = ny; }
+// 依關卡難度決定鬼魂 AI 的移動邏輯
+function monsterTurn(){
+  let nextMoves = [
+    {x: 0, y: 1}, {x: 0, y: -1}, {x: 1, y: 0}, {x: -1, y: 0}
+  ];
+  
+  // 篩選出不會撞牆的合法移動
+  let validMoves = nextMoves.filter(m => {
+    let nx = mx + m.x, ny = my + m.y;
+    return nx >= 0 && nx < MAP_SIZE && ny >= 0 && ny < MAP_SIZE && map[ny][nx] != "#";
+  });
+  
+  if (validMoves.length === 0) return; // 被卡死不動
+
+  // 難度 1：第 1~3 關 - 80% 亂走，20% 追玩家
+  if (currentLevel <= 3) {
+    if (Math.random() < 0.8) {
+      let m = validMoves[Math.floor(Math.random() * validMoves.length)];
+      mx += m.x; my += m.y;
+    } else {
+      basicChase(validMoves);
+    }
+  } 
+  // 難度 2：第 4~6 關 - 40% 亂走，60% 直線追玩家
+  else if (currentLevel <= 6) {
+    if (Math.random() < 0.4) {
+      let m = validMoves[Math.floor(Math.random() * validMoves.length)];
+      mx += m.x; my += m.y;
+    } else {
+      basicChase(validMoves);
+    }
+  } 
+  // 難度 3：第 7 關以上 - 100% 厲鬼尋路 (使用 BFS 廣度優先搜索算法繞過牆壁追殺)
+  else {
+    let bestMove = bfsFindPath();
+    if (bestMove) {
+      mx = bestMove.x; my = bestMove.y;
+    } else {
+      basicChase(validMoves);
+    }
+  }
+}
+
+// 基礎直線追蹤
+function basicChase(validMoves) {
+  let bestMove = validMoves[0];
+  let minDist = Infinity;
+  for (let m of validMoves) {
+    let nx = mx + m.x, ny = my + m.y;
+    let dist = Math.abs(nx - px) + Math.abs(ny - py);
+    if (dist < minDist) {
+      minDist = dist;
+      bestMove = m;
+    }
+  }
+  mx += bestMove.x; my += bestMove.y;
+}
+
+// 高階 AI：廣度優先搜索算法 (計算最短路徑繞過牆壁)
+function bfsFindPath() {
+  let queue = [ {x: mx, y: my, path: []} ];
+  let visited = Array(MAP_SIZE).fill().map(() => Array(MAP_SIZE).fill(false));
+  visited[my][mx] = true;
+  
+  let dirs = [{x:0, y:1}, {x:0, y:-1}, {x:1, y:0}, {x:-1, y:0}];
+  
+  while(queue.length > 0) {
+    let curr = queue.shift();
+    
+    if (curr.x === px && curr.y === py) {
+      return curr.path[0]; // 回傳下一步的座標
+    }
+    
+    for (let d of dirs) {
+      let nx = curr.x + d.x;
+      let ny = curr.y + d.y;
+      
+      if (nx >= 0 && nx < MAP_SIZE && ny >= 0 && ny < MAP_SIZE && map[ny][nx] !== "#" && !visited[ny][nx]) {
+        visited[ny][nx] = true;
+        let newPath = [...curr.path, {x: nx, y: ny}];
+        queue.push({x: nx, y: ny, path: newPath});
+      }
+    }
+  }
+  return null; // 找不到路徑則不變
 }
 
 function endGame() { 
@@ -180,7 +266,6 @@ document.addEventListener('keydown', function(event) {
  if(['ArrowRight', 'd', 'D'].includes(event.key)) { event.preventDefault(); move(1, 0); }
 });
 
-// 首次啟動隨機地圖
 generateRandomMap();
 </script>
 </body>
