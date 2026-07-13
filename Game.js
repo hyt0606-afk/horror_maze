@@ -76,6 +76,9 @@ drawPlayer(ctx);
 
 drawGhost(ctx);
 
+    // 最後蓋上一層黑暗
+drawLighting(ctx);
+    
 }
 
 // HUD
