@@ -3,12 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>👻 恐怖隨機迷宮逃脫 - 進階版</title>
+<title>👻 恐怖隨機迷宮逃脫 - 完美版</title>
 <style>
 body { background: #000; color: white; text-align: center; font-family: sans-serif; padding-top: 15px; user-select: none; }
 #level { font-size: 22px; color: #ff0055; font-weight: bold; margin-bottom: 5px; }
 #ai-status { font-size: 14px; color: #ff8800; margin-bottom: 10px; font-weight: bold; }
-/* 12x12 地圖，每格 30px，總寬度 360px */
 #game { margin: 15px auto; display: grid; grid-template-columns: repeat(12, 30px); width: 360px; border: 3px solid #444; background: #111; }
 .c { width: 30px; height: 30px; border: 1px solid #222; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-size: 16px; }
 .wall { background: #2a2a2a; border: 1px solid #3a3a3a; }
@@ -43,7 +42,7 @@ button { font-size: 22px; height: 55px; width: 70px; cursor: pointer; background
 <script>
 let currentLevel = 1;
 let map = [];
-const MAP_SIZE = 12; // 放大到 12x12
+const MAP_SIZE = 12;
 let px, py, mx, my, kx, ky, ex, ey;
 let key, gameover;
 
@@ -55,54 +54,74 @@ function shuffle(array) {
   return array;
 }
 
+// 核心修正：利用 BFS 演算法檢查地圖上兩點是否可相通
+function isReachable(sx, sy, tx, ty, tempMap) {
+  let queue = [{x: sx, y: sy}];
+  let visited = Array(MAP_SIZE).fill().map(() => Array(MAP_SIZE).fill(false));
+  visited[sy][sx] = true;
+  let dirs = [{x:0,y:1}, {x:0,y:-1}, {x:1,y:0}, {x:-1,y:0}];
+  
+  while(queue.length > 0) {
+    let curr = queue.shift();
+    if (curr.x === tx && curr.y === ty) return true;
+    for (let d of dirs) {
+      let nx = curr.x + d.x, ny = curr.y + d.y;
+      if (nx >= 0 && nx < MAP_SIZE && ny >= 0 && ny < MAP_SIZE && tempMap[ny][nx] !== "#" && !visited[ny][nx]) {
+        visited[ny][nx] = true;
+        queue.push({x: nx, y: ny});
+      }
+    }
+  }
+  return false;
+}
+
 function generateRandomMap() {
   document.getElementById("level").innerHTML = "第 " + currentLevel + " 關";
   
-  // 更新鬼魂智慧狀態顯示
   let aiText = "👹 鬼魂狀態：";
   if (currentLevel <= 3) aiText += "路痴 (隨機亂晃)";
   else if (currentLevel <= 6) aiText += "尾隨狂 (直覺跟蹤)";
   else aiText += "厲鬼化身 (智慧尋路繞牆)";
   document.getElementById("ai-status").innerHTML = aiText;
 
-  map = [];
-  
-  // 1. 建立 12x12 外牆
-  for(let y=0; y<MAP_SIZE; y++) {
-    let row = [];
-    for(let x=0; x<MAP_SIZE; x++) {
-      if(y === 0 || y === MAP_SIZE-1 || x === 0 || x === MAP_SIZE-1) {
-        row.push("#");
-      } else {
-        row.push(".");
+  // 使用無窮迴圈，直到生成一張保證可以100%通關的地圖才跳出
+  while (true) {
+    map = [];
+    for(let y=0; y<MAP_SIZE; y++) {
+      let row = [];
+      for(let x=0; x<MAP_SIZE; x++) {
+        row.push((y === 0 || y === MAP_SIZE-1 || x === 0 || x === MAP_SIZE-1) ? "#" : ".");
+      }
+      map.push(row);
+    }
+
+    let emptyCells = [];
+    for(let y=1; y<=MAP_SIZE-2; y++) {
+      for(let x=1; x<=MAP_SIZE-2; x++) {
+        emptyCells.push({x: x, y: y});
       }
     }
-    map.push(row);
-  }
+    shuffle(emptyCells);
 
-  // 2. 收集內部空地
-  let emptyCells = [];
-  for(let y=1; y<=MAP_SIZE-2; y++) {
-    for(let x=1; x<=MAP_SIZE-2; x++) {
-      emptyCells.push({x: x, y: y});
+    let pPos = emptyCells.pop(); px = pPos.x; py = pPos.y;
+    let mPos = emptyCells.pop(); mx = mPos.x; my = mPos.y;
+    let kPos = emptyCells.pop(); kx = kPos.x; ky = kPos.y;
+    let ePos = emptyCells.pop(); ex = ePos.x; ey = ePos.y;
+
+    // 隨機放置 22 個內牆
+    let wallCount = 22;
+    for(let i=0; i<wallCount; i++) {
+      if(emptyCells.length > 0) {
+        let wPos = emptyCells.pop();
+        map[wPos.y][wPos.x] = "#";
+      }
     }
-  }
-  shuffle(emptyCells);
 
-  // 3. 抽籤角色位置
-  let pPos = emptyCells.pop(); px = pPos.x; py = pPos.y;
-  let mPos = emptyCells.pop(); mx = mPos.x; my = mPos.y;
-  let kPos = emptyCells.pop(); kx = kPos.x; ky = kPos.y;
-  let ePos = emptyCells.pop(); ex = ePos.x; ey = ePos.y;
-
-  // 4. 隨機放內牆 (地圖變大，增加到 22 個內牆)
-  let wallCount = 22;
-  for(let i=0; i<wallCount; i++) {
-    if(emptyCells.length > 0) {
-      let wPos = emptyCells.pop();
-      // 確保不把重要道具堵死，簡單做隨機
-      map[wPos.y][wPos.x] = "#";
+    // Bug 檢測核心：必須滿足「玩家能走到鑰匙」且「鑰匙能走到出口」
+    if (isReachable(px, py, kx, ky, map) && isReachable(kx, ky, ex, ey, map)) {
+      break; // 通關路徑正確，跳出迴圈
     }
+    // 如果路徑被堵死，迴圈會自動重跑，重新生成全新的地圖
   }
 
   key = false;
@@ -154,7 +173,6 @@ function move(x,y){
   return; 
  }
 
- // 玩家動完一步，鬼魂立刻動一步
  monsterTurn();
 
  if(px == mx && py == my){ 
@@ -167,21 +185,14 @@ function move(x,y){
  draw();
 }
 
-// 依關卡難度決定鬼魂 AI 的移動邏輯
 function monsterTurn(){
-  let nextMoves = [
-    {x: 0, y: 1}, {x: 0, y: -1}, {x: 1, y: 0}, {x: -1, y: 0}
-  ];
-  
-  // 篩選出不會撞牆的合法移動
+  let nextMoves = [{x: 0, y: 1}, {x: 0, y: -1}, {x: 1, y: 0}, {x: -1, y: 0}];
   let validMoves = nextMoves.filter(m => {
     let nx = mx + m.x, ny = my + m.y;
     return nx >= 0 && nx < MAP_SIZE && ny >= 0 && ny < MAP_SIZE && map[ny][nx] != "#";
   });
-  
-  if (validMoves.length === 0) return; // 被卡死不動
+  if (validMoves.length === 0) return;
 
-  // 難度 1：第 1~3 關 - 80% 亂走，20% 追玩家
   if (currentLevel <= 3) {
     if (Math.random() < 0.8) {
       let m = validMoves[Math.floor(Math.random() * validMoves.length)];
@@ -190,7 +201,6 @@ function monsterTurn(){
       basicChase(validMoves);
     }
   } 
-  // 難度 2：第 4~6 關 - 40% 亂走，60% 直線追玩家
   else if (currentLevel <= 6) {
     if (Math.random() < 0.4) {
       let m = validMoves[Math.floor(Math.random() * validMoves.length)];
@@ -199,59 +209,43 @@ function monsterTurn(){
       basicChase(validMoves);
     }
   } 
-  // 難度 3：第 7 關以上 - 100% 厲鬼尋路 (使用 BFS 廣度優先搜索算法繞過牆壁追殺)
   else {
     let bestMove = bfsFindPath();
-    if (bestMove) {
-      mx = bestMove.x; my = bestMove.y;
-    } else {
-      basicChase(validMoves);
-    }
+    if (bestMove) { mx = bestMove.x; my = bestMove.y; } 
+    else { basicChase(validMoves); }
   }
 }
 
-// 基礎直線追蹤
 function basicChase(validMoves) {
   let bestMove = validMoves[0];
   let minDist = Infinity;
   for (let m of validMoves) {
     let nx = mx + m.x, ny = my + m.y;
     let dist = Math.abs(nx - px) + Math.abs(ny - py);
-    if (dist < minDist) {
-      minDist = dist;
-      bestMove = m;
-    }
+    if (dist < minDist) { minDist = dist; bestMove = m; }
   }
   mx += bestMove.x; my += bestMove.y;
 }
 
-// 高階 AI：廣度優先搜索算法 (計算最短路徑繞過牆壁)
 function bfsFindPath() {
-  let queue = [ {x: mx, y: my, path: []} ];
+  let queue = [ {x: mx, y: my, path: null} ];
   let visited = Array(MAP_SIZE).fill().map(() => Array(MAP_SIZE).fill(false));
   visited[my][mx] = true;
-  
   let dirs = [{x:0, y:1}, {x:0, y:-1}, {x:1, y:0}, {x:-1, y:0}];
   
   while(queue.length > 0) {
     let curr = queue.shift();
-    
-    if (curr.x === px && curr.y === py) {
-      return curr.path[0]; // 回傳下一步的座標
-    }
-    
+    if (curr.x === px && curr.y === py) return curr.path;
     for (let d of dirs) {
-      let nx = curr.x + d.x;
-      let ny = curr.y + d.y;
-      
-      if (nx >= 0 && nx < MAP_SIZE && ny >= 0 && ny < MAP_SIZE && map[ny][nx] !== "#" && !visited[ny][nx]) {
+      let nx = curr.x + d.x, ny = curr.y + d.y;
+      if (nx >= 0 && nx < MAP_SIZE && map[ny][nx] !== "#" && !visited[ny][nx]) {
         visited[ny][nx] = true;
-        let newPath = [...curr.path, {x: nx, y: ny}];
-        queue.push({x: nx, y: ny, path: newPath});
+        let firstStep = curr.path === null ? {x: nx, y: ny} : curr.path;
+        queue.push({x: nx, y: ny, path: firstStep});
       }
     }
   }
-  return null; // 找不到路徑則不變
+  return null;
 }
 
 function endGame() { 
